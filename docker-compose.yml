@@ -1,0 +1,181 @@
+version: '3.8'
+
+services:
+  # Hadoop NameNode
+  namenode:
+    image: apache/hadoop:3.3.6
+    container_name: ehr-namenode
+    hostname: namenode
+    command: ["hdfs", "namenode"]
+    ports:
+      - "9870:9870"    # Hadoop Web UI
+      - "8020:8020"    # HDFS API
+    env_file:
+      - ./config/hadoop.env
+    environment:
+      ENSURE_NAMENODE_DIR: "/tmp/hadoop-root/dfs/name"
+    volumes:
+      - namenode_data:/hadoop/dfs/name
+    networks:
+      - ehr-network
+
+  # Hadoop DataNode
+  datanode:
+    image: apache/hadoop:3.3.6
+    container_name: ehr-datanode
+    command: ["hdfs", "datanode"]
+    env_file:
+      - ./config/hadoop.env
+    volumes:
+      - datanode_data:/hadoop/dfs/data
+    depends_on:
+      - namenode
+    networks:
+      - ehr-network
+
+  # YARN ResourceManager
+  resourcemanager:
+    image: apache/hadoop:3.3.6
+    container_name: ehr-resourcemanager
+    hostname: resourcemanager
+    command: ["yarn", "resourcemanager"]
+    ports:
+      - "8088:8088"    # YARN Web UI
+    env_file:
+      - ./config/hadoop.env
+    depends_on:
+      - namenode
+    networks:
+      - ehr-network
+
+  # YARN NodeManager
+  nodemanager:
+    image: apache/hadoop:3.3.6
+    container_name: ehr-nodemanager
+    command: ["yarn", "nodemanager"]
+    env_file:
+      - ./config/hadoop.env
+    depends_on:
+      - resourcemanager
+    networks:
+      - ehr-network
+
+  # Zookeeper (Required for HBase)
+  zookeeper:
+    image: zookeeper:3.7.1
+    container_name: ehr-zookeeper
+    hostname: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=0.0.0.0:2888:3888;2181
+    volumes:
+      - zookeeper_data:/data
+      - zookeeper_logs:/logs
+    networks:
+      - ehr-network
+
+  # HBase Master
+  hbase-master:
+    image: harisekhon/hbase:1.4
+    container_name: ehr-hbase-master
+    hostname: hbase-master
+    ports:
+      - "16010:16010"  # HBase Web UI
+      - "16000:16000"  # HBase Master
+    environment:
+      HBASE_CONF_hbase_rootdir: hdfs://namenode:8020/hbase
+      HBASE_CONF_hbase_cluster_distributed: "true"
+      HBASE_CONF_hbase_zookeeper_quorum: zookeeper
+      HBASE_CONF_hbase_master: hbase-master:16000
+      HBASE_CONF_hbase_master_hostname: hbase-master
+      HBASE_CONF_hbase_master_port: "16000"
+      HBASE_CONF_hbase_master_info_port: "16010"
+      HBASE_CONF_hbase_regionserver_port: "16020"
+      HBASE_CONF_hbase_regionserver_info_port: "16030"
+    depends_on:
+      - namenode
+      - zookeeper
+    networks:
+      - ehr-network
+
+  # HBase RegionServer
+  hbase-regionserver:
+    image: harisekhon/hbase:1.4
+    container_name: ehr-hbase-regionserver
+    hostname: hbase-regionserver
+    ports:
+      - "16030:16030"  # RegionServer Web UI
+      - "16020:16020"  # RegionServer
+    environment:
+      HBASE_CONF_hbase_rootdir: hdfs://namenode:8020/hbase
+      HBASE_CONF_hbase_cluster_distributed: "true"
+      HBASE_CONF_hbase_zookeeper_quorum: zookeeper
+      HBASE_CONF_hbase_master: hbase-master:16000
+      HBASE_CONF_hbase_regionserver_hostname: hbase-regionserver
+    depends_on:
+      - hbase-master
+    networks:
+      - ehr-network
+
+  # HBase REST Server
+  hbase-rest:
+    image: harisekhon/hbase:1.4
+    container_name: ehr-hbase-rest
+    command: ["hbase", "rest", "start", "-p", "8080"]
+    ports:
+      - "8080:8080"    # HBase REST API
+    environment:
+      HBASE_CONF_hbase_rootdir: hdfs://namenode:8020/hbase
+      HBASE_CONF_hbase_cluster_distributed: "true"
+      HBASE_CONF_hbase_zookeeper_quorum: zookeeper
+      HBASE_CONF_hbase_master: hbase-master:16000
+    depends_on:
+      - hbase-master
+    networks:
+      - ehr-network
+
+  # Node.js Backend API
+  ehr-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ehr-backend
+    ports:
+      - "3000:3000"
+    environment:
+      HBASE_REST_URL: http://hbase-rest:8080
+      NODE_ENV: development
+    depends_on:
+      - hbase-rest
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - ehr-network
+
+  # Frontend Web Server
+  ehr-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ehr-frontend
+    ports:
+      - "80:80"       # Main web interface
+    depends_on:
+      - ehr-backend
+    networks:
+      - ehr-network
+
+# Persistent volumes
+volumes:
+  namenode_data:
+  datanode_data:
+  zookeeper_data:
+  zookeeper_logs:
+
+# Network for inter-container communication
+networks:
+  ehr-network:
+    driver: bridge
