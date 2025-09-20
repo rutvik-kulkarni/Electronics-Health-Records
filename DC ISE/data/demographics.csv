@@ -1,4 +1,0 @@
-patient_id,first_name,last_name,date_of_birth,age,gender,blood_type,address,phone,email,emergency_contact_name,emergency_contact_relationship,emergency_contact_phone
-PAT_001,John,Smith,1985-03-15,38,Male,A+,"123 Main Street, Austin, TX 73301",555-0123,john.smith@email.com,Jane Smith,Spouse,555-0124
-PAT_002,Sarah,Johnson,1992-07-20,31,Female,O-,"456 Oak Avenue, Dallas, TX 75201",555-0234,sarah.johnson@email.com,Michael Johnson,Husband,555-0235
-PAT_003,Robert,Davis,1978-11-05,45,Male,B+,"789 Pine Street, Houston, TX 77001",555-0345,robert.davis@email.com,Linda Davis,Wife,555-0346

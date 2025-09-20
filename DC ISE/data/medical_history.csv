@@ -1,6 +1,0 @@
-patient_id,condition,diagnosed_date,status,severity
-PAT_001,Hypertension,2020-05-15,Active,Mild
-PAT_001,Diabetes Type 2,2019-08-22,Active,Moderate
-PAT_002,Asthma,2010-03-10,Active,Mild
-PAT_003,High Cholesterol,2021-02-18,Active,Moderate
-PAT_003,Gastroesophageal Reflux Disease,2022-06-12,Active,Mild

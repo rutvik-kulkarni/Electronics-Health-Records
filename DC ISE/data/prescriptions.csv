@@ -1,6 +1,0 @@
-patient_id,medication,dosage,frequency,prescribed_date,prescribing_doctor,status
-PAT_001,Metformin,500mg,Twice daily,2019-08-22,Dr. Williams,Active
-PAT_001,Lisinopril,10mg,Once daily,2020-05-15,Dr. Johnson,Active
-PAT_002,Albuterol Inhaler,90mcg,As needed,2023-01-15,Dr. Brown,Active
-PAT_003,Atorvastatin,20mg,Once daily,2021-02-18,Dr. Martinez,Active
-PAT_003,Omeprazole,20mg,Once daily before breakfast,2022-06-12,Dr. Lee,Active
